@@ -4,6 +4,8 @@
 #include <ifaddrs.h>
 #include <stdio.h>
 int main(){
+  printf("Address Name\tIPV\tHost Name\n");
+  //printf("Address Name\tIPV\tService Name\tHost Name\n");
   struct ifaddrs *addresses;
   /*
    * L I N K E D     L I S T
@@ -29,8 +31,9 @@ int main(){
       printf("%s\t", address->ifa_name);
       printf("%s\t", family == AF_INET ? "IPV4" : "IPV6");
       char ap[100];
+      char sp[100];
       const int family_size = family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
-      getnameinfo(address->ifa_addr, family_size, ap, sizeof(ap), 0, 0, NI_NUMERICHOST);
+      getnameinfo(address->ifa_addr, family_size, ap, sizeof(ap), sp, sizeof(sp), NI_NUMERICHOST);
       /*
        * F U N C T I O N A L I T Y
        * socket address --> host and service name
@@ -50,6 +53,7 @@ int main(){
        *        NI_NUMERICHOST -> numeric form of the hostname
        *        NU_NUMERICSERV -> numeric form of the service address
        * */
+      // printf("\t%s\t", sp); // we don't have server for now disabled
       printf("\t%s\n", ap);
     }
     address = address->ifa_next;
