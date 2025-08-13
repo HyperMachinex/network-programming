@@ -15,10 +15,11 @@
 // M A C R O S
 #define ISVALIDSOCKET(s) ((s) >=0)
 #define CLOSESOCKET(s) close(s)
-#define SOCKET int
+#define SOCKET int // socket() returns negative on failure
 #define GETSOCKETERRNO() (errno)
 
 #define LINE "==============================\n"
+
 int main(int argc, char *argv[]){
   
   printf("Configuring local address...\n%s", LINE);
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]){
   struct addrinfo *bind_address;
   getaddrinfo(0, "8080", &hints, &bind_address);
 
-  printf("Creating socket...\n%s", LINE);
+  printf("Creating socket...\n%s", LINE); 
   SOCKET socket_listen;
   socket_listen = socket(bind_address->ai_family, bind_address->ai_socktype, bind_address->ai_protocol);
   if(!ISVALIDSOCKET(socket_listen)){
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]){
   struct sockaddr_storage client_address;
   socklen_t client_len = sizeof(client_address);
   SOCKET socket_client = accept(socket_listen, (struct sockaddr*) &client_address, &client_len);
-  if(!ISVALIDSOCKET(socket_client)){
+  if(!(socket_client >= 0)){ // or if(!ISVALIDSOCKET(socket_client)) 
     fprintf(stderr, "accept() failed. (%d)\n", GETSOCKETERRNO());
     return 1;
   }
@@ -90,10 +91,10 @@ int main(int argc, char *argv[]){
   printf("Sent time_msg %d of %d bytes.\n%s", bytes_sent, (int)strlen(time_msg), LINE);
 
   printf("Closing connection...\n%s", LINE);
-  CLOSESOCKET(socket_client);
+  CLOSESOCKET(socket_client); // or close(socket_client)
 
   printf("Closing listening socket...\n%s", LINE);
-  CLOSESOCKET(socket_listen);
+  CLOSESOCKET(socket_listen); // or close(socket_listen)
 
   printf("F I N I S H E D\n");
 
