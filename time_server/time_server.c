@@ -24,6 +24,22 @@ int main(int argc, char *argv[]){
   
   printf("Configuring local address...\n%s", LINE);
   struct addrinfo hints;
+  /*
+   * ai_family -> AF_INET or AF_INET6, AF_UNSPEC if getaddrinfo() returns
+   * ai_socktype -> SOCK_STREAM (TCP) or SOCK_DGRAM (UDP)
+   * ai_protocol -> to use getaddrinfo() set 0
+   * ai_flags ->
+   *            AI_NUMERICHOST -> returns numerical network address 
+   *            AI_PASSIVE -> suitable for bind()
+   *                       -> if don't set AI_PASSIVE -> suitable for connect(), sendto() and sendmsg()
+   *            AI_NUMERICSERV -> service point numric port number string
+   *
+   * Attributes on under set 0 (mostly with memset), getaddrinfo fills them.
+   * ai_addrlen
+   * ai_addr 
+   * ai_canonname
+   * ai_next
+   * */
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
@@ -31,6 +47,18 @@ int main(int argc, char *argv[]){
 
   struct addrinfo *bind_address;
   getaddrinfo(0, "8080", &hints, &bind_address);
+  /*
+   * int getaddrinfo(const char *restrict node,
+                       const char *restrict service,
+                       const struct addrinfo *restrict hints,
+                       struct addrinfo **restrict res);
+  */
+  /*
+   * node -> hostname; if sets 0 anyip
+   * service -> port
+   * hints -> filter
+   * res -> output 
+   * */
 
   printf("Creating socket...\n%s", LINE); 
   SOCKET socket_listen;
@@ -39,12 +67,31 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "socket() failed. (%d)\n", GETSOCKETERRNO());
     return 1;
   }
+  /*
+   * int socket(int domain, int type, int protocol);
+   * return -1 on error
+   * return file descriptor on success
+  */
+  /*
+   * domain -> AF_INET or AF_INET6 is enough for now
+   * type -> SOCK_STREAM or SOCK_DGRAM is enough for now
+   * protocol -> if domain and type is set, not necessery. domain + type gives protocol.
+   */
   
   printf("Binding socket to local address...\n%s", LINE);
   if(bind(socket_listen, bind_address->ai_addr, bind_address->ai_addrlen)){
     fprintf(stderr, "bind() failed (%d)\n", GETSOCKETERRNO());
     return 1;
   }
+  /*
+   * int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+   * return 0 success, negative on error
+  */
+  /*
+   *  sockfd -> return of socket()
+   *  addr -> from getaddrinfo()
+   *  addrlen -> from getaddrinfo()
+  */
 
   freeaddrinfo(bind_address);
 
@@ -53,6 +100,14 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "listen() failed. (%d)\n", GETSOCKETERRNO());
     return 1;
   }
+  /*
+   * int listen(int sockfd, int backlog);
+   * On succes 0; -1 on error 
+  */
+  /*
+   * sockfd -> socket() return
+   * backlog -> max queue before throw error to client
+  */
 
   printf("Waiting for connection...\n%s", LINE);
   struct sockaddr_storage client_address;
@@ -62,6 +117,15 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "accept() failed. (%d)\n", GETSOCKETERRNO());
     return 1;
   }
+  /*
+   * int accept(int sockfd, struct sockaddr *_Nullable restrict addr, socklen_t *_Nullable restrict addrlen);
+   * On success file descriptor, -1 on error
+  */
+  /*
+   * sockfd -> socket() return
+   * addr -> list of peer sockets 
+   * addrlen -> sizeof(addr) assigned to socklen_t 
+  */
 
   printf("Client is connected:");
   char address_buffer[100];
@@ -73,16 +137,36 @@ int main(int argc, char *argv[]){
   int bytes_received = recv(socket_client, request, 1024, 0);
   printf("Received %d bytes.\n%s", bytes_received, LINE);
   //printf("%.*s", bytes_received, request);
+  /*
+   * ssize_t recv(int sockfd, void buf[.size], size_t size, int flags);
+   * return the number of bytes that received
+  */
+  /*
+   * sockfd -> socket() return
+   * buf -> output string
+   * size -> size_t[buf]
+   * flags -> doesn't matter i guess
+  */
 
   printf("Sending response...\n%s", LINE);
   const char* response = 
                         "HTTP/1.1 200 OK\r\n"
-                        "Connection: close\r\n"
-                        "Content-Type: text/plain\r\n\r\n"
-                        "Local time is: ";
+                        "Connection: close\r\n" // close connection after all data sent 
+                        "Content-Type: text/plain\r\n\r\n" // HTTP response header ends with a blank line -> \r\n\r\n 
+                        "Local time is: "; // After the blank line is treated by the browsers as plain text
 
   int bytes_sent = send(socket_client, response, strlen(response), 0);
   printf("Sent 200OK %d of %d bytes.\n", bytes_sent, (int)strlen(response));
+  /*
+   * ssize_t send(int sockfd, const void buf[.size], size_t size, int flags);
+   * returns the number of bytes sent 
+  */
+  /*
+   * sockfd -> socket() return
+   * buf[] -> message 
+   * size -> strlen(message)
+   * flags -> doesn't matter
+  */
 
   time_t timer;
   time(&timer);
