@@ -20,8 +20,13 @@
 
 #define LINE "==============================\n"
 
+#define DEFAULT 1
+#define LOOP 0
+
+
+
 int main(int argc, char *argv[]){
-  
+
   printf("Configuring local address...\n%s", LINE);
   struct addrinfo hints;
   /*
@@ -151,8 +156,10 @@ int main(int argc, char *argv[]){
   printf("Sending response...\n%s", LINE);
   const char* response = 
                         "HTTP/1.1 200 OK\r\n"
-                        "Connection: close\r\n" // close connection after all data sent 
-                        "Content-Type: text/plain\r\n\r\n" // HTTP response header ends with a blank line -> \r\n\r\n 
+                        "Connection: close\r\n" // close connection after all data sent
+                        //"Connection: keep-alive\r\n"
+                        "Content-Type: text/plain\r\n\r\n" // HTTP response header ends with a blank line -> \r\n\r\n
+                        //"Transfer-Encoding: chunked\r\n\r\n"
                         "Local time is: "; // After the blank line is treated by the browsers as plain text
 
   int bytes_sent = send(socket_client, response, strlen(response), 0);
@@ -167,7 +174,6 @@ int main(int argc, char *argv[]){
    * size -> strlen(message)
    * flags -> doesn't matter
   */
-
   time_t timer;
   time(&timer);
   char *time_msg = ctime(&timer);
