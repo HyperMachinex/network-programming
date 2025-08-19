@@ -152,7 +152,7 @@ int main(int argc, char *argv[]){
    * size -> size_t[buf]
    * flags -> doesn't matter i guess
   */
-
+#if DEFAULT
   printf("Sending response...\n%s", LINE);
   const char* response = 
                         "HTTP/1.1 200 OK\r\n"
@@ -179,6 +179,7 @@ int main(int argc, char *argv[]){
   char *time_msg = ctime(&timer);
   bytes_sent = send(socket_client, time_msg, strlen(time_msg), 0);
   printf("Sent time_msg %d of %d bytes.\n%s", bytes_sent, (int)strlen(time_msg), LINE);
+#endif
 
   printf("Closing connection...\n%s", LINE);
   CLOSESOCKET(socket_client); // or close(socket_client)
