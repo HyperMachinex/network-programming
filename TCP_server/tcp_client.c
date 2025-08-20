@@ -1,22 +1,26 @@
+/*
+ * C L I E N T 
+ * socket() -> connect() *
+*/
 #include "include.h"
 #include <netdb.h>
 #include <string.h>
 #include <sys/select.h>
 #include <unistd.h>
-
 int main(int argc, char *argv[])
 {
   if (argc < 3){
     fprintf(stderr, "usage: tcp_client hostname port \n");
     return 1;
   }
-
+// 
   printf("Configuring remote address...\n");
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
   hints.ai_socktype = SOCK_STREAM;
   struct addrinfo *peer_address;
 
+  // get info rom ip:port with filter hints and store to peer_address
   if (getaddrinfo(argv[1], argv[2], &hints, &peer_address)) {
     fprintf(stderr, "getaddrinfo() failed. (%d)\n", GETSOCKETERRNO());
     return 1;
@@ -38,12 +42,21 @@ int main(int argc, char *argv[])
     fprintf(stderr, "socket() failed. (%d)\n", GETSOCKETERRNO());
     return 1;
   }
-
+  // we are connecting another server so doesn't need bind(), we are not server; we are client.
   printf("Connecting...\n");
   if(connect(socket_peer, peer_address->ai_addr, peer_address->ai_addrlen)){
     fprintf(stderr, "connect() failed. (%d)\n", GETSOCKETERRNO());
     return 1;
   }
+  /*
+   * int connect(int sockfd, const struct sockaddr* addr, socklen_t addrlen)
+  */
+  /*
+   * sockfd -> return of socket()
+   * addr -> from getnameinfo()
+   * addrlen -> from getnameinfo()
+   *
+  */
   freeaddrinfo(peer_address);
 
   printf("Connected.\n");
@@ -51,10 +64,10 @@ int main(int argc, char *argv[])
 
   while(1){
 
-    fd_set reads;
-    FD_ZERO(&reads);
-    FD_SET(socket_peer, &reads);
-    FD_SET(0, &reads);
+    fd_set reads; // file descriptor
+    FD_ZERO(&reads); // set 0 all bits
+    FD_SET(socket_peer, &reads); // add socket_peer to readers array
+    FD_SET(0, &reads); // follow if there is input from console
 
     struct timeval timeout;
     timeout.tv_sec = 0;
@@ -64,8 +77,19 @@ int main(int argc, char *argv[])
       fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
       return 1;
     }
+    /*
+     *  int select(int nfds, fd_set *_Nullable restrict readfds,
+                  fd_set *_Nullable restrict writefds,
+                  fd_set *_Nullable restrict exceptfds,
+                  struct timeval *_Nullable restrict timeout);
+     *  nfds -> return of socket()
+     *  readfds -> reader
+     *  writefds -> writer
+     *  exceptfds -> exceptional conditions
+     *  timeout -> time before exit 
+    */
 
-    if(FD_ISSET(socket_peer, &reads)){
+    if(FD_ISSET(socket_peer, &reads)){ // checks if socket_peer are setted to reads 
       char read[4096];
       int bytes_received = recv(socket_peer, read, 4096, 0);
       if(bytes_received < 1){
